@@ -5,7 +5,7 @@ which needs file4's native ~1 km pixels (the 0.03 deg grid is too coarse for
 ~20 km cells). Temperature thresholds are shifted by +/-5 K to show how robust
 each threshold-based result is.
 
-Output: outputs/step6_weather/weather.json and three figures
+Output: outputs/step6_weather/weather.json and four figures
 """
 
 import json
@@ -35,6 +35,8 @@ LAND_SEA = {  # land box and nearby ocean box: (west, east, south, north)
     "Australia (17:00 local)": ((120, 145, -30, -20), (95, 110, -30, -20)),
 }
 OPEN_CELLS_BOX = (-16, -9, 61, 63)
+# Remnant of Severe Tropical Cyclone Sean at 06 UTC 22 Jan 2025 (Bureau of Meteorology bulletin)
+EX_SEAN = {"lon": 107.1, "lat": -27.8, "box": (90, 130, -45, -10)}
 COLORS = ["#0072B2", "#E69F00", "#009E73", "#D55E00", "#CC79A7"]  # Okabe-Ito, colour-blind safe
 
 
@@ -169,6 +171,27 @@ def open_cells(path):
     return {"box": OPEN_CELLS_BOX, "pixel_km": [round(dx, 2), round(dy, 2)], "cell_size_km": round(peak, 1)}
 
 
+def plot_ex_sean(lat, lon, bt, path):
+    """Himawari view around the last reported position of ex-Tropical Cyclone Sean."""
+    w, e, s, n = EX_SEAN["box"]
+    rows, cols = rows_cols(lat, lon, EX_SEAN["box"])
+    fig = plt.figure(figsize=(7, 6))
+    ax = fig.add_subplot(projection=ccrs.PlateCarree())
+    im = ax.imshow(bt[rows, cols], extent=[w, e, s, n], transform=ccrs.PlateCarree(), origin="upper",
+                   cmap=ir_colormap(), vmin=BT_RANGE[0], vmax=BT_RANGE[1])
+    ax.add_feature(cfeature.COASTLINE.with_scale("50m"), linewidth=0.6, edgecolor="goldenrod")
+    ax.plot(EX_SEAN["lon"], EX_SEAN["lat"], "+", color=COLORS[3], ms=16, mew=2.5,
+            label="ex-TC Sean, BoM position 06 UTC")
+    ax.legend(loc="upper left", fontsize=8)
+    gl = ax.gridlines(draw_labels=True, linewidth=0.3, color="0.5", linestyle=":")
+    gl.top_labels = gl.right_labels = False
+    fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.7, pad=0.08, label="brightness temperature (K)")
+    ax.set_title("Remnant of Cyclone Sean, Himawari IR, 22 Jan 2025 08:00 UTC\n"
+                 "low-level swirl without deep convection, cloud band joining a front to the south", fontsize=10)
+    fig.savefig(path)
+    plt.close(fig)
+
+
 def main():
     out = out_dir("step6_weather")
     with xr.open_dataset(OUT / "step5_merged" / "satellite_mosaic.nc", chunks={"lat": 600, "lon": 1200}) as ds:
@@ -180,6 +203,7 @@ def main():
               for s in (-BT_UNCERTAINTY, BT_UNCERTAINTY)}
     counts["+0 K"] = int(sum(x["mcc_size"] and x["trustworthy"] for x in systems))
     plot_shields(lat, lon, bt, systems, labels, out / "cold_shields.png")
+    plot_ex_sean(lat, lon, bt, out / "ex_sean.png")
     result = {"land_minus_ocean": land_sea(lat, lon, bt), "itcz": itcz(lat, lon, bt, out / "itcz.png"),
               "mcc_size_tropical_systems": counts,
               "largest_tropical_systems": [s for s in systems if s["trustworthy"]][:10],
