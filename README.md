@@ -15,6 +15,17 @@ flowchart LR
     S5 --> NC[(satellite_mosaic.nc<br/>CF-1.10 / ACDD-1.3)]
 ```
 
+## Approach
+
+| Step | What I did | Why |
+|---|---|---|
+| 1. Describe | Read format, projection, size, time and valid area of each file | Every later step depends on knowing what each file is |
+| 2. Extract | Defined the no-data rules, fixed one projection and converted 8-bit values to temperature | Without physical units there is no meteorology |
+| 3. Visualise | Mapped each file in its own projection with coastlines | Cheapest check that the georeferencing is correct, before any resampling |
+| 4. Reproject | Put all files on one lat/lon grid (EPSG:4326, 0.03°) | Files can only be compared and merged on the same grid |
+| 5. Merge | Built one IR mosaic and wrote everything to one CF/ACDD NetCDF file | One self-describing file that any tool can read |
+| 6. Weather | Extracted weather information from the merged product | To show what the data says about the weather of that day |
+
 ## How to run
 
 ```bash
@@ -27,30 +38,6 @@ python -m venv .venv
 Each step only reads the outputs of earlier steps. If cartopy cannot download the coastlines, run `export SSL_CERT_FILE=$(python -m certifi)` first.
 
 The NetCDF files are not in the repository (the merged file is 149 MB). Run the pipeline to create them.
-
-## Code
-
-| File | Lines | What it does |
-|---|---|---|
-| `src/common.py` | 138 | All settings (file identities, no-data rules, grid, calibration anchors) and shared helpers |
-| `src/step1_describe.py` | 61 | Format, projection, size, time and coverage of each file |
-| `src/step2_calibrate.py` | 138 | 8-bit values to brightness temperature, histograms, file4 channel decoding |
-| `src/step3_maps.py` | 91 | One map per file in its own projection |
-| `src/step4_reproject.py` | 86 | All files on one 0.03° lat/lon grid |
-| `src/step5_merge.py` | 187 | IR mosaic and all inputs in one CF/ACDD NetCDF file |
-| `src/step6_weather.py` | 192 | Weather insights from the NetCDF file |
-| `src/run_all.py` | 19 | Runs the six steps in order |
-
-## Outputs
-
-| Folder | Content |
-|---|---|
-| `outputs/step1_files/` | `files.md`: table describing the four files |
-| `outputs/step2_calibration/` | `calibration.json` (calibration line and anchors, read by steps 3, 4 and 5) and three figures |
-| `outputs/step3_maps/` | One map per file |
-| `outputs/step4_reprojected/` | One NetCDF per file on the common grid (not committed) and an overview figure |
-| `outputs/step5_merged/` | `satellite_mosaic.nc` (not committed) and `composite.png` |
-| `outputs/step6_weather/` | `weather.json` (all numbers below) and three figures |
 
 ## 1. File description
 
@@ -65,13 +52,12 @@ The NetCDF files are not in the repository (the merged file is 149 MB). Run the 
 | Time (UTC) | 2025-01-22 06:15 | 2025-01-22 08:00 | Not given | 2025-01-20 12:19 |
 | Valid pixels | 87 % | 94 % | 78 % | 83 % |
 
-All four files are 8-bit GeoTIFFs (values 0-255). They are display images, not calibrated satellite data: they have no units, no calibration and almost no metadata.
+All four files are 8-bit GeoTIFFs (values 0-255). They are display images, not calibrated satellite data: no units, no calibration, no channel names.
 
-How the satellites were identified:
+**How I identified the satellites.** The metadata does not name any satellite. It only contains the projection and, for three files, a timestamp.
 
-- **Position:** a geostationary disc is symmetric around the satellite longitude. The disc edges give 0.6° for file1 and 140.7°E for file2.
-- **Pixel size:** ABI samples every 56 µrad, which is 2.004 km from geostationary height. This matches file3 exactly (2004 m). file1 keeps the SEVIRI sampling distance of 3.0004 km.
-- **Time:** from the TIFF time tag. file3 has none.
+- **file3:** the projection itself is the evidence. It is geostationary, centred at 75°W at 35 786 km, which is the GOES-East position. The pixel size confirms it: ABI samples every 56 µrad, which is 2.004 km from that height, and the file has 2004 m pixels.
+- **file1, file2 and file4:** the projection is a plain lat/lon or polar stereographic grid. I measured the centre of the disc from the symmetry of its edges (0.6° for file1, 140.7°E for file2) and consulted AI (Claude) with these centres and the timestamps to identify the satellites. file1 keeps the SEVIRI sampling distance (3.0004 km), which is consistent with Meteosat. For file4 only the instrument type is certain (AVHRR-like channels); the exact satellite is not.
 
 Full table: `outputs/step1_files/files.md`.
 
@@ -113,13 +99,11 @@ Figure: `outputs/step4_reprojected/all_files_on_grid.png`.
 
 The mosaic covers 76.9 % of the globe. Meteosat and Himawari meet at 70.4°E, where both see the Earth at about 79°. The two images are 1 h 45 min apart, so the clouds do not match exactly at this seam.
 
-Figure: `outputs/step5_merged/composite.png`.
-
 ![composite](outputs/step5_merged/composite.png)
 
 ## 6. Weather insights
 
-All temperature thresholds were also tested at ±5 K (the calibration uncertainty).
+At this point the data engineer handed the keyboard to the meteorologist. I extended the analysis to what I think an analyst would ask first: where is the convection, how big are the storms, and did anything notable happen that day? All temperature thresholds were also tested at ±5 K (the calibration uncertainty).
 
 | Topic | Result | Explanation |
 |---|---|---|
@@ -129,37 +113,75 @@ All temperature thresholds were also tested at ±5 K (the calibration uncertaint
 | Cold-air outbreak (file4) | Open cells between Iceland and the Faroes, typical size about 19 km | Arctic air over a warmer sea. The size comes from the spatial spectrum of the visible channel |
 | False detections | Large "cold cloud" areas over Siberia, Greenland and Antarctica | Cold winter ground seen at viewing angles above 80°. Excluded from the storm statistics |
 
-Figures and numbers: `outputs/step6_weather/`.
+**Notable events.** I was not working in a weather service in January 2025, so I consulted AI (Claude) to find which events happened around these dates, and then checked them in the data and in official sources.
+
+- **Remnant of Severe Tropical Cyclone Sean (visible in file2).** Sean hit the Pilbara coast of Western Australia from 17 to 23 January, with record rain at Karratha. The Bureau of Meteorology reported that it lost its tropical characteristics at 06 UTC on 22 January, near 27.8°S 107.1°E. Two hours later, Himawari shows a low-level cloud swirl at that position with no deep convection left, and a cloud band that joins a front to the south: a typical decaying tropical cyclone.
+- **Storm Éowyn (context).** It formed off the US east coast on 22 January, deepened by about 50 hPa in 24 hours and hit Ireland and Scotland on 24 January with record gusts. Our files do not show its early stage clearly (file3 has no time).
+- **Gulf Coast snowstorm (context).** Record snow fell in New Orleans and Pensacola on 21 January, during a strong Arctic outbreak over the United States.
+- **Madden-Julian Oscillation (context).** NOAA reported an active MJO over the Indian Ocean in late January, which fits the strong convection we find there.
+
+Figures and numbers: `outputs/step6_weather/` (the remnant of Sean is in `ex_sean.png`).
 
 ## 7. Summary
 
 **Key observations**
 
 - The files are display images, so physical values had to be recovered before any analysis.
-- The scene is typical for January: tropical convection moved into the southern summer over land and the Indian Ocean, a winter storm track in the North Atlantic, and a cold-air outbreak over the Norwegian Sea.
+- The scene is typical for January: tropical convection moved into the southern summer over land and the Indian Ocean, a winter storm track in the North Atlantic, a cold-air outbreak over the Norwegian Sea, and the remnant of a tropical cyclone off Western Australia.
 
-**Challenges**
+**Challenges and how I solved them**
 
-- No calibration in the files. Solved with known-temperature scenes and checked against independent scenes.
-- Wrong projection in file3 (missing sweep axis). Found by checking coastlines.
-- The value 255 in file3 means both space and saturated storm tops. Solved with the border rule.
-- file2 crosses the date line. Solved by reprojecting it in two parts.
-- The global grid does not fit in memory at once. Solved with chunked processing (dask).
-- Two satellites seen at different times and very oblique angles at the seam. Documented per pixel in the NetCDF (source, time, angle).
+| Challenge | Solution |
+|---|---|
+| No calibration in the files | Recovered the temperature scale from scenes of known temperature and checked it against independent scenes |
+| file3 projection was wrong (missing sweep axis) | Found by checking coastlines, fixed with `sweep=x` |
+| In file3, 255 means both space and saturated storm tops | Only 255 regions touching the image border are treated as space |
+| file2 crosses the date line | Reprojected in two parts |
+| The global grid (6000 x 12000) does not fit in memory at once | Chunked processing with dask |
+| The two IR satellites see the seam at different times and very oblique angles | Kept one satellite per pixel (smallest angle) and stored source, time and angle per pixel |
+| rasterio 1.5.2 has no wheel for macOS 14 and the system GDAL was broken | Pinned rasterio 1.5.1 and installed binary wheels only |
 
-**Results**
+**Limitations and next steps**
 
-- One reproducible pipeline, from the raw files to a documented NetCDF file.
-- Maps of each file, the merged product and four weather analyses with tested thresholds.
-
-## Limitations and next steps
-
-- Temperatures are ±5 K. The three check scenes all come out 2-5 K too cold, so the line may have a small cold bias. With Level 1 data (calibrated radiances) this step is not needed.
+- Temperatures are ±5 K. The three check scenes come out 2-5 K too cold, so the line may have a small cold bias. With Level 1 data (calibrated radiances) this step is not needed.
 - One channel per satellite: no cloud phase, fog, dust or snow detection.
 - One image per satellite: no motion, winds or storm tracking.
 - The water-vapour image has no time and no calibration.
 - No parallax correction: high clouds seen at large angles are shifted (about 77 km for a 15 km cloud top at the seam).
 - Next steps: add Meteosat IODC (45.5°E) and GOES-West to close the gaps, use same-time images, correct parallax, and track storms over time.
+
+The solution is not perfect, and I know where its weak points are. I enjoyed building it, I learned a lot about satellite data on the way, and I would like to keep learning in this role.
+
+## Code
+
+| File | Lines | What it does |
+|---|---|---|
+| `src/common.py` | 138 | All settings (file identities, no-data rules, grid, calibration anchors) and shared helpers |
+| `src/step1_describe.py` | 61 | Format, projection, size, time and coverage of each file |
+| `src/step2_calibrate.py` | 138 | 8-bit values to brightness temperature, histograms, file4 channel decoding |
+| `src/step3_maps.py` | 91 | One map per file in its own projection |
+| `src/step4_reproject.py` | 86 | All files on one 0.03° lat/lon grid |
+| `src/step5_merge.py` | 187 | IR mosaic and all inputs in one CF/ACDD NetCDF file |
+| `src/step6_weather.py` | 216 | Weather insights from the NetCDF file |
+| `src/run_all.py` | 19 | Runs the six steps in order |
+
+## Outputs
+
+| Folder | Content |
+|---|---|
+| `outputs/step1_files/` | `files.md`: table describing the four files |
+| `outputs/step2_calibration/` | `calibration.json` (calibration line and anchors, read by steps 3, 4 and 5) and three figures |
+| `outputs/step3_maps/` | One map per file |
+| `outputs/step4_reprojected/` | One NetCDF per file on the common grid (not committed) and an overview figure |
+| `outputs/step5_merged/` | `satellite_mosaic.nc` (not committed) and `composite.png` |
+| `outputs/step6_weather/` | `weather.json` (all numbers above) and four figures |
+
+## Sources for the weather events
+
+- Bureau of Meteorology, Severe Tropical Cyclone Sean: https://www.bom.gov.au/cyclone/history/sean2025.shtml
+- ECMWF Newsletter 183, Storm Éowyn: https://www.ecmwf.int/node/29351
+- NASA, Gulf Coast snow, January 2025: https://science.nasa.gov/?p=1160242
+- NOAA CPC, MJO update, 27 January 2025: https://cpc.ncep.noaa.gov/products/precip/CWlink/MJO/ARCHIVE/PDF/mjo_evol-status-fcsts-20250127.pdf
 
 ---
 
