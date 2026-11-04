@@ -1,0 +1,255 @@
+{
+  "land_minus_ocean": {
+    "Sahara (07:00 local)": {
+      "land_K": 281.9,
+      "ocean_K": 290.5,
+      "land_minus_ocean_K": -8.5
+    },
+    "Arabia (09:30 local)": {
+      "land_K": 292.1,
+      "ocean_K": 290.9,
+      "land_minus_ocean_K": 1.2
+    },
+    "Southern Africa (07:45 local)": {
+      "land_K": 297.4,
+      "ocean_K": 288.9,
+      "land_minus_ocean_K": 8.5
+    },
+    "Australia (17:00 local)": {
+      "land_K": 316.4,
+      "ocean_K": 289.5,
+      "land_minus_ocean_K": 26.9
+    }
+  },
+  "itcz": {
+    "Atlantic 40W-10W": {
+      "peak_lat": 4.9,
+      "peak_lat_at_-5K": 5.0,
+      "peak_lat_at_+5K": 4.9
+    },
+    "Africa 10E-40E": {
+      "peak_lat": -0.1,
+      "peak_lat_at_-5K": -0.1,
+      "peak_lat_at_+5K": -13.5
+    },
+    "Indian Ocean 55E-90E": {
+      "peak_lat": -7.3,
+      "peak_lat_at_-5K": -7.4,
+      "peak_lat_at_+5K": -7.3
+    },
+    "Maritime Continent 100E-150E": {
+      "peak_lat": 4.8,
+      "peak_lat_at_-5K": 4.8,
+      "peak_lat_at_+5K": 4.8
+    },
+    "West Pacific 150E-180": {
+      "peak_lat": -16.1,
+      "peak_lat_at_-5K": -16.2,
+      "peak_lat_at_+5K": 5.6
+    }
+  },
+  "mcc_size_tropical_systems": {
+    "-5 K": 9,
+    "+5 K": 16,
+    "+0 K": 12
+  },
+  "largest_tropical_systems": [
+    {
+      "id": 4914,
+      "row_col": [
+        2961,
+        9597
+      ],
+      "lat": 1.2,
+      "shield_km2": 2519694,
+      "core_km2": 916176,
+      "min_bt_K": 187.4,
+      "mean_vza": 38.3,
+      "trustworthy": true,
+      "mcc_size": true
+    },
+    {
+      "id": 4791,
+      "row_col": [
+        2840,
+        8660
+      ],
+      "lat": 4.8,
+      "shield_km2": 871816,
+      "core_km2": 464242,
+      "min_bt_K": 191.4,
+      "mean_vza": 69.1,
+      "trustworthy": true,
+      "mcc_size": true
+    },
+    {
+      "id": 6405,
+      "row_col": [
+        3136,
+        4188
+      ],
+      "lat": -4.1,
+      "shield_km2": 620740,
+      "core_km2": 298490,
+      "min_bt_K": 197.6,
+      "mean_vza": 62.2,
+      "trustworthy": true,
+      "mcc_size": true
+    },
+    {
+      "id": 7711,
+      "row_col": [
+        3398,
+        7317
+      ],
+      "lat": -12.0,
+      "shield_km2": 439930,
+      "core_km2": 119254,
+      "min_bt_K": 196.5,
+      "mean_vza": 47.5,
+      "trustworthy": true,
+      "mcc_size": true
+    },
+    {
+      "id": 7547,
+      "row_col": [
+        3286,
+        215
+      ],
+      "lat": -8.6,
+      "shield_km2": 384271,
+      "core_km2": 165692,
+      "min_bt_K": 191.1,
+      "mean_vza": 53.4,
+      "trustworthy": true,
+      "mcc_size": true
+    },
+    {
+      "id": 7413,
+      "row_col": [
+        3254,
+        7631
+      ],
+      "lat": -7.6,
+      "shield_km2": 258720,
+      "core_km2": 104244,
+      "min_bt_K": 193.5,
+      "mean_vza": 56.7,
+      "trustworthy": true,
+      "mcc_size": true
+    },
+    {
+      "id": 5566,
+      "row_col": [
+        2938,
+        6457
+      ],
+      "lat": 1.8,
+      "shield_km2": 211710,
+      "core_km2": 102971,
+      "min_bt_K": 193.3,
+      "mean_vza": 16.5,
+      "trustworthy": true,
+      "mcc_size": true
+    },
+    {
+      "id": 6128,
+      "row_col": [
+        2970,
+        10854
+      ],
+      "lat": 0.9,
+      "shield_km2": 191540,
+      "core_km2": 66121,
+      "min_bt_K": 190.6,
+      "mean_vza": 6.1,
+      "trustworthy": true,
+      "mcc_size": true
+    },
+    {
+      "id": 6924,
+      "row_col": [
+        3148,
+        11007
+      ],
+      "lat": -4.5,
+      "shield_km2": 146591,
+      "core_km2": 61274,
+      "min_bt_K": 190.8,
+      "mean_vza": 12.4,
+      "trustworthy": true,
+      "mcc_size": true
+    },
+    {
+      "id": 5418,
+      "row_col": [
+        2830,
+        7909
+      ],
+      "lat": 5.1,
+      "shield_km2": 129213,
+      "core_km2": 48810,
+      "min_bt_K": 205.1,
+      "mean_vza": 65.4,
+      "trustworthy": true,
+      "mcc_size": false
+    }
+  ],
+  "largest_shields_anywhere": [
+    {
+      "id": 1,
+      "row_col": [
+        700,
+        10135
+      ],
+      "lat": 69.0,
+      "shield_km2": 7912124,
+      "core_km2": 295831,
+      "min_bt_K": 214.4,
+      "mean_vza": 82.7,
+      "trustworthy": false,
+      "mcc_size": true
+    },
+    {
+      "id": 3,
+      "row_col": [
+        661,
+        5516
+      ],
+      "lat": 70.2,
+      "shield_km2": 3612005,
+      "core_km2": 2134836,
+      "min_bt_K": 195.1,
+      "mean_vza": 81.3,
+      "trustworthy": false,
+      "mcc_size": true
+    },
+    {
+      "id": 2472,
+      "row_col": [
+        1636,
+        4069
+      ],
+      "lat": 40.9,
+      "shield_km2": 3150245,
+      "core_km2": 1516322,
+      "min_bt_K": 202.4,
+      "mean_vza": 75.1,
+      "trustworthy": false,
+      "mcc_size": true
+    }
+  ],
+  "open_cells": {
+    "box": [
+      -16,
+      -9,
+      61,
+      63
+    ],
+    "pixel_km": [
+      1.15,
+      1.0
+    ],
+    "cell_size_km": 18.7
+  }
+}
