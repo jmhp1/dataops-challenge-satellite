@@ -1,12 +1,14 @@
+# Tested with Python 3.13
 # Install with: pip install --only-binary :all: -r requirements.txt
-# (binary wheels bundle their own GDAL/PROJ/HDF5, so no system libraries are needed)
-rasterio==1.5.1   # 1.5.2 ships no macOS 14 arm64 wheel
-numpy
-scipy             # connected regions (masks, cloud shields)
-pyproj
-xarray
-dask[array]       # step 5 works on the global grid in chunks
-netCDF4
-matplotlib
-cartopy           # coastlines and map projections
-certifi           # if cartopy cannot download coastlines: export SSL_CERT_FILE=$(python -m certifi)
+# (binary wheels include GDAL, PROJ and HDF5, so no system libraries are needed)
+rasterio==1.5.1      # 1.5.2 has no macOS 14 arm64 wheel
+affine==3.0.1
+numpy==2.5.4
+scipy==1.18.1        # connected regions (masks, cloud shields)
+pyproj==3.8.0
+xarray==2026.9.0
+dask[array]==2026.8.0  # step 5 works on the global grid in chunks
+netCDF4==1.7.4
+matplotlib==3.11.2
+cartopy==0.26.0      # coastlines and map projections
+certifi==2026.10.23  # if cartopy cannot download coastlines: export SSL_CERT_FILE=$(python -m certifi)
