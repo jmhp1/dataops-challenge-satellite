@@ -1,0 +1,12 @@
+# Install with: pip install --only-binary :all: -r requirements.txt
+# (binary wheels bundle their own GDAL/PROJ/HDF5, so no system libraries are needed)
+rasterio==1.5.1   # 1.5.2 ships no macOS 14 arm64 wheel
+numpy
+scipy             # connected regions (masks, cloud shields)
+pyproj
+xarray
+dask[array]       # step 5 works on the global grid in chunks
+netCDF4
+matplotlib
+cartopy           # coastlines and map projections
+certifi           # if cartopy cannot download coastlines: export SSL_CERT_FILE=$(python -m certifi)

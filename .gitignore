@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+# large generated rasters; keep figures and markdown
+outputs/**/*.tif
+outputs/**/*.aux.xml
+outputs/**/*.nc
+build/
