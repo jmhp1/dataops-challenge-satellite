@@ -1,6 +1,6 @@
 # Satellite data processing challenge: solution
 
-This README answers the seven tasks of the challenge. The original brief is at the end.
+This README answers the seven tasks of the challenge. The original brief is at the end. During the course of this exercise, I have made some consultation to AI (Claude) which has helped me, I have highlighted in what AI has assisted me.
 
 Four satellite images go in. A documented NetCDF file and a set of figures come out. The code is six Python scripts, one per task, run in order.
 
@@ -35,9 +35,9 @@ python -m venv .venv
 .venv/bin/python -m src.step3_maps     # or a single step
 ```
 
-Each step only reads the outputs of earlier steps. If cartopy cannot download the coastlines, run `export SSL_CERT_FILE=$(python -m certifi)` first.
+Each step only reads the outputs of earlier steps.
 
-The NetCDF files are not in the repository (the merged file is 149 MB). Run the pipeline to create them.
+The NetCDF files are not in the repository. GitHub rejects any file over 100 MB, and the merged NetCDF is 149 MB.  Run the pipeline to create them again.
 
 ## 1. File description
 
@@ -47,7 +47,7 @@ The NetCDF files are not in the repository (the merged file is 149 MB). Run the 
 | Instrument | SEVIRI | AHI | ABI | AVHRR type |
 | Channel | IR 10.8 µm | IR 10.4 µm | Water vapour 6-7 µm | RGB: VIS 0.6, NIR 0.8, inverted IR 10.8 µm |
 | Projection | Lat/lon (equidistant cylindrical) | Lat/lon (equidistant cylindrical) | Geostationary | Polar stereographic |
-| Pixel size | 3.0 km | 2.0 km | 2.0 km | 1.15 x 1.0 km |
+| Pixel size (estimated using code made by AI) | 3.0 km | 2.0 km | 2.0 km | 1.15 x 1.0 km |
 | Size (pixels) | 5666 x 5936 | 8500 x 8906 | 5424 x 5424 | 2560 x 2088 |
 | Time (UTC) | 2025-01-22 06:15 | 2025-01-22 08:00 | Not given | 2025-01-20 12:19 |
 | Valid pixels | 87 % | 94 % | 78 % | 83 % |
@@ -56,15 +56,15 @@ All four files are 8-bit GeoTIFFs (values 0-255). They are display images, not c
 
 **How I identified the satellites.** The metadata does not name any satellite. It only contains the projection and, for three files, a timestamp.
 
-- **file3:** the projection itself is the evidence. It is geostationary, centred at 75°W at 35 786 km, which is the GOES-East position. The pixel size confirms it: ABI samples every 56 µrad, which is 2.004 km from that height, and the file has 2004 m pixels.
-- **file1, file2 and file4:** the projection is a plain lat/lon or polar stereographic grid. I measured the centre of the disc from the symmetry of its edges (0.6° for file1, 140.7°E for file2) and consulted AI (Claude) with these centres and the timestamps to identify the satellites. file1 keeps the SEVIRI sampling distance (3.0004 km), which is consistent with Meteosat. For file4 only the instrument type is certain (AVHRR-like channels); the exact satellite is not.
+- **file3:** The projection itself is the evidence. It is geostationary, centred at 75°W at 35 786 km, which is the GOES-East position. After consulting with AI, as I was not fully trusting my notes and memory, I confirmed it with the pixel size: ABI samples every 56 µrad, which is 2.004 km at that height, and the file has 2004 m pixels.
+- **file1, file2 and file4:** The projection is a plain lat/lon or polar stereographic grid. First I identified the centre of the disc from the symmetry of its edges (0.6° for file1, 140.7°E for file2) and consulted AI (Claude) with these centres and the timestamps to identify the satellites. file1 keeps the SEVIRI sampling distance (3.0004 km), which is consistent with Meteosat. For file4 only the instrument type is certain (AVHRR-like channels); the exact satellite is not.
 
 Full table: `outputs/step1_files/files.md`.
 
 ## 2. Data extraction
 
 - **No-data values.** 0 in file1 and file2, the alpha band in file4. In file3, 255 marks space but also the coldest (saturated) storm tops, so only 255 regions that touch the image border are treated as no data.
-- **Projection fix.** GOES scans along the x axis (`sweep=x`). GeoTIFF cannot store this, so file3 falls back to the Meteosat convention and pixels shift by kilometres near the disc edge. With `sweep=x` the coastlines fit.
+- **Projection fix.** GOES scans along the x axis (`sweep=x`). GeoTIFF cannot store this, so file3 falls back to the Meteosat convention and pixels shift by kilometres near the disc edge. With `sweep=x`, the coastlines fit. I solved this with the help of AI after reviewing my Remote Sensing notes, combining old and new methods.
 - **Temperature.** The IR values decrease linearly with temperature. A weighted fit through scenes of known temperature (clear ocean, coldest tropical storm tops) gives
 
   **BT = 329.0 - 0.568 x DN (K), uncertainty ±5 K**
@@ -115,10 +115,9 @@ At this point the data engineer handed the keyboard to the meteorologist. I exte
 
 **Notable events.** I was not working in a weather service in January 2025, so I consulted AI (Claude) to find which events happened around these dates, and then checked them in the data and in official sources.
 
-- **Remnant of Severe Tropical Cyclone Sean (visible in file2).** Sean hit the Pilbara coast of Western Australia from 17 to 23 January, with record rain at Karratha. The Bureau of Meteorology reported that it lost its tropical characteristics at 06 UTC on 22 January, near 27.8°S 107.1°E. Two hours later, Himawari shows a low-level cloud swirl at that position with no deep convection left, and a cloud band that joins a front to the south: a typical decaying tropical cyclone.
-- **Storm Éowyn (context).** It formed off the US east coast on 22 January, deepened by about 50 hPa in 24 hours and hit Ireland and Scotland on 24 January with record gusts. Our files do not show its early stage clearly (file3 has no time).
-- **Gulf Coast snowstorm (context).** Record snow fell in New Orleans and Pensacola on 21 January, during a strong Arctic outbreak over the United States.
-- **Madden-Julian Oscillation (context).** NOAA reported an active MJO over the Indian Ocean in late January, which fits the strong convection we find there.
+- **Remnant of Severe Tropical Cyclone Sean (visible in file2).** Sean hit the coast of Western Australia from 17 to 23 January. The Bureau of Meteorology reported that it lost its tropical characteristics at 06 UTC on 22 January, near 27.8°S 107.1°E. Two hours later, Himawari (the satellite, I think (after consulting AI) that captured the Indian ocean image) shows a low-level cloud swirl at that position with no deep convection left, and a cloud band that joins a front to the south: a typical decaying tropical cyclone.
+- **Storm Éowyn (context).** It formed off the US east coast on 22 January, deepened by about 50 hPa in 24 hours and hit Ireland and Scotland on 24 January with record gusts. Our files do not show its early stage clearly (file3 has no time), so I hinted that the cyclogenesis was not fully captured by these images.
+- **Gulf Coast snowstorm (context).** Record snow fell in New Orleans on 21 January, during a strong Arctic outbreak over the United States.
 
 Figures and numbers: `outputs/step6_weather/` (the remnant of Sean is in `ex_sean.png`).
 
@@ -133,13 +132,13 @@ Figures and numbers: `outputs/step6_weather/` (the remnant of Sean is in `ex_sea
 
 | Challenge | Solution |
 |---|---|
-| No calibration in the files | Recovered the temperature scale from scenes of known temperature and checked it against independent scenes |
-| file3 projection was wrong (missing sweep axis) | Found by checking coastlines, fixed with `sweep=x` |
+| No calibration in the files | Recovered the temperature scale from scenes of known temperature and checked it against independent scenes. It is not the best calibration, I am fully aware, but I think that I came up with a simple, yet useful solution. |
+| file3 projection was wrong (missing sweep axis) | Found by checking coastlines, fixed with `sweep=x`, tricky, took some time and help of AI to identify what I could do to obtain a proper image. |
 | In file3, 255 means both space and saturated storm tops | Only 255 regions touching the image border are treated as space |
-| file2 crosses the date line | Reprojected in two parts |
-| The global grid (6000 x 12000) does not fit in memory at once | Chunked processing with dask |
-| The two IR satellites see the seam at different times and very oblique angles | Kept one satellite per pixel (smallest angle) and stored source, time and angle per pixel |
-| rasterio 1.5.2 has no wheel for macOS 14 and the system GDAL was broken | Pinned rasterio 1.5.1 and installed binary wheels only |
+| file2 crosses the date line | Reprojected in two parts. This was probably what took me more time. I had to remind myself how I did it last time. |
+| The global grid (6000 x 12000) does not fit in memory at once | Chunked processing with dask. I used dask as it seems to be quite good for it; before, I would have used xarray. |
+| The two IR satellites see the seam at different times and very oblique angles | Kept one satellite per pixel (smallest angle) and stored source, time and angle per pixel (to do this I reviewed my notes from the MSc where we had a similar exercise, it felt good, however there are probably better approaches) |
+| rasterio 1.5.2 has no wheel for macOS 14 and the system GDAL was broken | Pinned rasterio 1.5.1 and installed binary wheels only (Helped by AI)| 
 
 **Limitations and next steps**
 
@@ -150,7 +149,7 @@ Figures and numbers: `outputs/step6_weather/` (the remnant of Sean is in `ex_sea
 - No parallax correction: high clouds seen at large angles are shifted (about 77 km for a 15 km cloud top at the seam).
 - Next steps: add Meteosat IODC (45.5°E) and GOES-West to close the gaps, use same-time images, correct parallax, and track storms over time.
 
-The solution is not perfect, and I know where its weak points are. I enjoyed building it, I learned a lot about satellite data on the way, and I would like to keep learning in this role.
+The solution is not perfect, and I know where its weak points are. I enjoyed building it.
 
 ## Code
 
@@ -183,97 +182,4 @@ The solution is not perfect, and I know where its weak points are. I enjoyed bui
 - NASA, Gulf Coast snow, January 2025: https://science.nasa.gov/?p=1160242
 - NOAA CPC, MJO update, 27 January 2025: https://cpc.ncep.noaa.gov/products/precip/CWlink/MJO/ARCHIVE/PDF/mjo_evol-status-fcsts-20250127.pdf
 
----
 
-# Original challenge brief
-
-## Overview
-This repository addresses a challenge centered around satellite data processing. The objective is to process provided satellite data files, extract useful information, and create meaningful visual and analytical outputs.
-
-## Challenge Tasks
-
-### 1. File Description
-- Analyze and describe the contents of the provided files:
-  - `file1`
-  - `file2`
-  - `file3`
-  - `file4`
-
-### 2. Data Extraction
-- Extract as much information as possible from the provided files. This includes:
-  - Metadata (e.g., projection, resolution, timestamp, etc.)
-  - Raster or vector data specifics
-
-### 3. Visual Representation
-- Generate meaningful image representations of the data, such as:
-  - Heatmaps
-  - Topographic maps
-  - Any other visualization relevant to the data context
-
-### 4. Reprojection
-- Reproject all images to a common projection system for consistency.
-
-### 5. Data Merging
-- Merge the data from all compatible files into a single comprehensive image, ensuring alignment and consistency.
-
-### 6. Weather Insights
-- If possible, extract and provide useful weather-related information from the data.
-
-### 7. Summary
-- Summarize the work performed, including:
-  - Key observations
-  - Challenges encountered
-  - Results achieved
-
-## Requirements
-
-### Programming Language
-- **Python**
-
-### Suggested Libraries
-- [osgeo (gdal, osr)](https://gdal.org/): For handling geospatial data
-- [numpy](https://numpy.org/): For numerical operations
-- [rasterio](https://rasterio.readthedocs.io/): For raster data manipulation
-- [matplotlib](https://matplotlib.org/): For creating visualizations
-
-## Instructions
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/StormGeo/dataops-challenge-satellite
-   ```
-2. Push the changes to your personal GitHub account:
-   - Create a new repository in your personal GitHub account.
-   - Push the cloned repository to your personal repository:
-     ```bash
-     git remote add origin https://github.com/your-username/your-repo-name.git
-     git push -u origin main
-     ```
-4. Add me as a participant in your repository to review the results:
-   - Go to your repository on GitHub.
-   - Navigate to **Settings** > **Manage Access**.
-   - Add my GitHub username as a collaborator: manelceperuelo
-
-5. You will present the results in the second-round interview. Be prepared to discuss:
-   - Your approach to solving the tasks
-   - Challenges encountered
-   - Tools and methods used
-
-## Notes
-- The provided images may be in different projections, requiring careful handling during reprojection and merging.
-- The final outputs should include both visual and textual summaries to demonstrate the results.
-
-## Deliverable suggestions
-1. Descriptions of the files
-2. Image representations
-3. Reprojected images
-5. Merged images
-6. Weather-related insights (if applicable)
-7. A summary of the work
-
-## Questions?
-You are free to organize and structure the project and the code as you see fit.
-If you have any questions, please contact us and we'll help you out. This is not an exam.
-
----
-
-Happy coding and good luck with the challenge!
